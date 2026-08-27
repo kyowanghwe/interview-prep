@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Java Interview Prep</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header__brand">
+                <h1 class="header__title">&#9749; Senior Java Interview Prep</h1>
+                <p class="header__subtitle">Daily practice questions for senior-level Java interviews</p>
+            </div>
+            <div class="header__stats">
+                <div class="stat">
+                    <span class="stat__value" id="totalQuestions">0</span>
+                    <span class="stat__label">Total</span>
+                </div>
+                <div class="stat">
+                    <span class="stat__value" id="completedToday">0</span>
+                    <span class="stat__label">Today</span>
+                </div>
+                <div class="stat">
+                    <span class="stat__value" id="streak">0</span>
+                    <span class="stat__label">Streak</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <section class="controls">
+            <div class="controls__filters">
+                <label class="controls__label">Topic:</label>
+                <select id="topicFilter" class="controls__select">
+                    <option value="all">All Topics</option>
+                </select>
+
+                <label class="controls__label">Difficulty:</label>
+                <select id="difficultyFilter" class="controls__select">
+                    <option value="all">All Levels</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="expert">Expert</option>
+                </select>
+
+                <label class="controls__label">Status:</label>
+                <select id="statusFilter" class="controls__select">
+                    <option value="all">All</option>
+                    <option value="unseen">Unseen</option>
+                    <option value="completed">Completed</option>
+                    <option value="bookmarked">Bookmarked</option>
+                </select>
+            </div>
+
+            <div class="controls__actions">
+                <button id="shuffleBtn" class="btn btn--secondary">&#128256; Shuffle</button>
+                <button id="dailySetBtn" class="btn btn--primary">&#127919; Daily Set (20)</button>
+                <button id="resetProgressBtn" class="btn btn--danger">&#128260; Reset</button>
+            </div>
+        </section>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-bar__fill" id="progressFill"></div>
+            <span class="progress-bar__text" id="progressText">0 / 0 completed</span>
+        </div>
+
+        <!-- Questions List -->
+        <main class="questions" id="questionsList">
+            <div class="loading" id="loadingIndicator">
+                <div class="loading__spinner"></div>
+                <p>Loading questions...</p>
+            </div>
+        </main>
+
+        <!-- Data Source Config -->
+        <section class="config" id="configSection">
+            <h3 class="config__title">&#9881;&#65039; Data Source</h3>
+            <div class="config__field">
+                <label for="sheetUrl">Google Sheet URL (published CSV):</label>
+                <input type="text" id="sheetUrl" class="config__input" 
+                    placeholder="https://docs.google.com/spreadsheets/d/e/YOUR_ID/pub?output=csv">
+                <button id="saveConfigBtn" class="btn btn--primary">Save & Reload</button>
+                <button id="useLocalBtn" class="btn btn--secondary">Use Local Data</button>
+            </div>
+            <p class="config__hint">
+                Leave empty to use the built-in question bank. 
+                See README for Google Sheets setup instructions.
+            </p>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built for daily practice. Add your own questions via Google Sheets or edit <code>data/questions.json</code>.</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js" type="module"></script>
+</body>
+</html>
