@@ -1,0 +1,24 @@
+name = "jip-oauth"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# ---------------------------------------------------------------------------
+# Non-secret vars. ALLOWED_ORIGIN must be the EXACT origin of your site.
+# For GitHub Pages that is:  https://YOUR_USERNAME.github.io
+# (origin only — no path, no trailing slash). Multiple origins may be comma
+# separated, e.g. to also allow local dev:
+#   ALLOWED_ORIGIN = "https://YOUR_USERNAME.github.io,http://localhost:8000"
+# ---------------------------------------------------------------------------
+[vars]
+ALLOWED_ORIGIN = "https://kyowanghwe.github.io"
+
+# ---------------------------------------------------------------------------
+# Secrets are NOT stored here. Set them with wrangler (they are encrypted and
+# never committed):
+#
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
+#
+# GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET come from the GitHub OAuth App you
+# register (see README "Cross-Device Sync" section).
+# ---------------------------------------------------------------------------

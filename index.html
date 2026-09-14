@@ -16,6 +16,17 @@
             <div class="header__brand">
                 <h1 class="header__title">&#9749; Senior Java Interview Prep</h1>
                 <p class="header__subtitle">Daily practice questions for senior-level Java interviews</p>
+                <div class="auth" id="authArea">
+                    <button id="loginBtn" class="btn btn--github" style="display:none">
+                        &#128273; Login with GitHub
+                    </button>
+                    <div id="authUser" class="auth__user" style="display:none">
+                        <img id="authAvatar" class="auth__avatar" alt="" width="24" height="24">
+                        <span id="authName" class="auth__name"></span>
+                        <button id="logoutBtn" class="btn btn--secondary btn--small">Logout</button>
+                    </div>
+                    <span id="syncStatus" class="auth__sync"></span>
+                </div>
             </div>
             <div class="header__stats">
                 <div class="stat">
@@ -60,7 +71,7 @@
 
             <div class="controls__actions">
                 <button id="shuffleBtn" class="btn btn--secondary">&#128256; Shuffle</button>
-                <button id="dailySetBtn" class="btn btn--primary">&#127919; Daily Set (20)</button>
+                <button id="dailySetBtn" class="btn btn--primary">&#127919; Daily Set (10)</button>
                 <button id="resetProgressBtn" class="btn btn--danger">&#128260; Reset</button>
             </div>
         </section>

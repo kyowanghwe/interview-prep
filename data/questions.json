@@ -375,7 +375,7 @@
                         "It serializes beans to disk and reloads them"
                     ],
         "correctIndex":  1,
-        "explanation":  "Spring uses three caches: singletonObjects (fully initialized), earlySingletonObjects (partially initialized), singletonFactories (ObjectFactory). When A needs B and B needs A, Spring exposes A\u0027s early reference to B. This does NOT work with constructor injection - use @Lazy on one param if needed."
+        "explanation":  "Spring uses three caches: singletonObjects (fully initialized), earlySingletonObjects (partially initialized), singletonFactories (ObjectFactory). When A needs B and B needs A, Spring exposes A\u0027s early reference to B. This does NOT work with constructor injection â€” use @Lazy on one param if needed."
     },
     {
         "id":  "28",
@@ -398,7 +398,7 @@
         "question":  "What special behavior does @Repository provide beyond being a component stereotype?",
         "choices":  [
                         "It enables automatic REST endpoint generation",
-                        "It adds automatic exception translation - converting DB exceptions to Spring DataAccessException",
+                        "It adds automatic exception translation â€” converting DB exceptions to Spring DataAccessException",
                         "It makes the bean prototype-scoped by default",
                         "It enables transaction management without @Transactional"
                     ],
@@ -459,7 +459,7 @@
                         "AutoCloseable"
                     ],
         "correctIndex":  1,
-        "explanation":  "Comparator\u003cT\u003e encapsulates a sorting algorithm (strategy) that can be swapped at runtime. You pass different Comparator implementations to sort differently without modifying the sorting code. With lambdas: List.sort((a, b) -\u003e a.getName().compareTo(b.getName())) - the lambda IS the strategy."
+        "explanation":  "Comparator\u003cT\u003e encapsulates a sorting algorithm (strategy) that can be swapped at runtime. You pass different Comparator implementations to sort differently without modifying the sorting code. With lambdas: List.sort((a, b) -\u003e a.getName().compareTo(b.getName())) â€” the lambda IS the strategy."
     },
     {
         "id":  "34",
@@ -496,7 +496,7 @@
         "question":  "What advantage does Spring\u0027s @EventListener have over direct method coupling between components?",
         "choices":  [
                         "It makes method calls faster",
-                        "The publisher doesn\u0027t know about listeners - they\u0027re fully decoupled",
+                        "The publisher doesn\u0027t know about listeners â€” they\u0027re fully decoupled",
                         "It prevents null pointer exceptions",
                         "It guarantees events are processed before the method returns"
                     ],
@@ -509,10 +509,10 @@
         "difficulty":  "expert",
         "question":  "In a Circuit Breaker, what state does it enter when failures exceed the threshold?",
         "choices":  [
-                        "CLOSED - normal operation continues",
-                        "HALF-OPEN - it sends test requests to check recovery",
-                        "OPEN - it fails fast without calling the service",
-                        "DISABLED - it removes itself from the call chain"
+                        "CLOSED â€” normal operation continues",
+                        "HALF-OPEN â€” it sends test requests to check recovery",
+                        "OPEN â€” it fails fast without calling the service",
+                        "DISABLED â€” it removes itself from the call chain"
                     ],
         "correctIndex":  2,
         "explanation":  "Circuit Breaker states: CLOSED (normal, tracking failures) â†’ OPEN (failing fast after threshold, no calls made) â†’ HALF-OPEN (after timeout, sends test requests). If test succeeds â†’ CLOSED. If test fails â†’ OPEN again. This prevents cascading failures by not wasting resources calling a known-broken service."
@@ -543,7 +543,7 @@
                         "It uses AspectJ weaving to inject method bodies"
                     ],
         "correctIndex":  1,
-        "explanation":  "Spring Data creates a JDK proxy implementing your interface at runtime. Method names are parsed into queries: findByNameAndAge() becomes SELECT WHERE name=? AND age=?. Custom queries use @Query. This eliminates boilerplate for 90% of data access patterns - you just define the interface."
+        "explanation":  "Spring Data creates a JDK proxy implementing your interface at runtime. Method names are parsed into queries: findByNameAndAge() becomes SELECT WHERE name=? AND age=?. Custom queries use @Query. This eliminates boilerplate for 90% of data access patterns â€” you just define the interface."
     },
     {
         "id":  "40",
@@ -585,7 +585,7 @@
                         "Static factory methods with @Bean"
                     ],
         "correctIndex":  2,
-        "explanation":  "Constructor injection is preferred: dependencies are clear and explicit, fields can be final (immutable), easier to test (just pass mocks to constructor), no reflection needed, fails fast if dependency missing. Since Spring 4.3, a single constructor is auto-detected - no @Autowired needed."
+        "explanation":  "Constructor injection is preferred: dependencies are clear and explicit, fields can be final (immutable), easier to test (just pass mocks to constructor), no reflection needed, fails fast if dependency missing. Since Spring 4.3, a single constructor is auto-detected â€” no @Autowired needed."
     },
     {
         "id":  "43",
@@ -599,7 +599,7 @@
                         "Factory Method is only used in static contexts"
                     ],
         "correctIndex":  1,
-        "explanation":  "Factory Method: one method creating one product type (subclasses decide which implementation). Abstract Factory: a family of methods creating related products (e.g., GUIFactory with createButton(), createDialog() - WindowsFactory produces Windows widgets, MacFactory produces Mac widgets). Use Abstract Factory when objects must be used together."
+        "explanation":  "Factory Method: one method creating one product type (subclasses decide which implementation). Abstract Factory: a family of methods creating related products (e.g., GUIFactory with createButton(), createDialog() â€” WindowsFactory produces Windows widgets, MacFactory produces Mac widgets). Use Abstract Factory when objects must be used together."
     },
     {
         "id":  "44",
@@ -613,7 +613,7 @@
                         "@Value cannot read from application.yml files"
                     ],
         "correctIndex":  1,
-        "explanation":  "@ConfigurationProperties binds entire property groups to a typed POJO: supports nested objects, lists/maps, @Validated with JSR-303, relaxed binding (kebab-case â†’ camelCase), and immutable construction. @Value is for simple one-off values and supports SpEL. Use @ConfigurationProperties for structured config - it\u0027s type-safe, testable, and self-documenting."
+        "explanation":  "@ConfigurationProperties binds entire property groups to a typed POJO: supports nested objects, lists/maps, @Validated with JSR-303, relaxed binding (kebab-case â†’ camelCase), and immutable construction. @Value is for simple one-off values and supports SpEL. Use @ConfigurationProperties for structured config â€” it\u0027s type-safe, testable, and self-documenting."
     },
     {
         "id":  "45",
@@ -655,7 +655,7 @@
                         "Orchestration only works with synchronous communication"
                     ],
         "correctIndex":  1,
-        "explanation":  "Orchestration: central coordinator tells each service what to do next - easier to understand, single control point, but single point of failure. Choreography: services listen to events and decide their own next step - more decoupled, no coordinator, but harder to track overall flow. Both need idempotent compensating actions for rollback."
+        "explanation":  "Orchestration: central coordinator tells each service what to do next â€” easier to understand, single control point, but single point of failure. Choreography: services listen to events and decide their own next step â€” more decoupled, no coordinator, but harder to track overall flow. Both need idempotent compensating actions for rollback."
     },
     {
         "id":  "48",
@@ -697,7 +697,7 @@
                         "Database schema conflicts"
                     ],
         "correctIndex":  1,
-        "explanation":  "Bulkhead isolates components using separate resource pools: if Service A\u0027s thread pool is exhausted (slow/down), Service B calls still work on their own pool. Like ship compartments - one breach doesn\u0027t sink the ship. Implementation: separate thread pools per service (ThreadPool bulkhead) or semaphore-based limits (Semaphore bulkhead) via Resilience4j."
+        "explanation":  "Bulkhead isolates components using separate resource pools: if Service A\u0027s thread pool is exhausted (slow/down), Service B calls still work on their own pool. Like ship compartments â€” one breach doesn\u0027t sink the ship. Implementation: separate thread pools per service (ThreadPool bulkhead) or semaphore-based limits (Semaphore bulkhead) via Resilience4j."
     },
     {
         "id":  "51",
@@ -734,7 +734,7 @@
         "question":  "In practice, when is LinkedList a better choice than ArrayList?",
         "choices":  [
                         "When you need fast random access by index",
-                        "Almost never - ArrayList outperforms LinkedList in most real-world scenarios due to cache locality",
+                        "Almost never â€” ArrayList outperforms LinkedList in most real-world scenarios due to cache locality",
                         "When the list will contain more than 1000 elements",
                         "When you need thread safety"
                     ],
@@ -767,7 +767,7 @@
                         "It locks the collection to prevent modification"
                     ],
         "correctIndex":  1,
-        "explanation":  "Fail-fast iterators (ArrayList, HashMap) detect structural modification via modCount field and throw ConcurrentModificationException. Fail-safe iterators (CopyOnWriteArrayList, ConcurrentHashMap) work on copies or tolerate concurrent modification - no CME but may not reflect latest changes."
+        "explanation":  "Fail-fast iterators (ArrayList, HashMap) detect structural modification via modCount field and throw ConcurrentModificationException. Fail-safe iterators (CopyOnWriteArrayList, ConcurrentHashMap) work on copies or tolerate concurrent modification â€” no CME but may not reflect latest changes."
     },
     {
         "id":  "56",
@@ -781,7 +781,7 @@
                         "When the garbage collector triggers"
                     ],
         "correctIndex":  1,
-        "explanation":  "Intermediate operations are lazy - they build a pipeline description but don\u0027t process data. Execution only happens when a terminal operation is called. This enables optimizations: short-circuiting (findFirst stops early), loop fusion (combining filter+map into one pass), and avoiding unnecessary work."
+        "explanation":  "Intermediate operations are lazy â€” they build a pipeline description but don\u0027t process data. Execution only happens when a terminal operation is called. This enables optimizations: short-circuiting (findFirst stops early), loop fusion (combining filter+map into one pass), and avoiding unnecessary work."
     },
     {
         "id":  "57",
@@ -823,7 +823,7 @@
                         "Supplier\u003cBoolean\u003e"
                     ],
         "correctIndex":  1,
-        "explanation":  "Predicate\u003cT\u003e: T -\u003e boolean (used for testing/filtering). Function\u003cT,R\u003e: T -\u003e R (transform). Consumer\u003cT\u003e: T -\u003e void (side effects). Supplier\u003cT\u003e: () -\u003e T (produce value). While Function\u003cT,Boolean\u003e works technically, Predicate is the idiomatic choice - it\u0027s used by Stream.filter() and has useful methods like and(), or(), negate()."
+        "explanation":  "Predicate\u003cT\u003e: T -\u003e boolean (used for testing/filtering). Function\u003cT,R\u003e: T -\u003e R (transform). Consumer\u003cT\u003e: T -\u003e void (side effects). Supplier\u003cT\u003e: () -\u003e T (produce value). While Function\u003cT,Boolean\u003e works technically, Predicate is the idiomatic choice â€” it\u0027s used by Stream.filter() and has useful methods like and(), or(), negate()."
     },
     {
         "id":  "60",
@@ -888,7 +888,7 @@
         "question":  "When is object pooling harmful rather than helpful in modern Java?",
         "choices":  [
                         "When pooling database connections",
-                        "When pooling cheap, short-lived objects like small POJOs - modern GCs handle them efficiently and pooling adds synchronization overhead",
+                        "When pooling cheap, short-lived objects like small POJOs â€” modern GCs handle them efficiently and pooling adds synchronization overhead",
                         "When pooling thread instances",
                         "When pooling SSL/TLS sessions"
                     ],
@@ -921,7 +921,7 @@
                         "Pass Optional as a method parameter"
                     ],
         "correctIndex":  1,
-        "explanation":  "Best practices: never call get() without checking - use orElse(default), orElseGet(() -\u003e compute()), or orElseThrow(). Chain with map/flatMap: optional.map(User::getName).orElse(\"unknown\"). Don\u0027t use Optional as field type, method parameter, or in collections. Return empty collections instead of Optional\u003cList\u003e."
+        "explanation":  "Best practices: never call get() without checking â€” use orElse(default), orElseGet(() -\u003e compute()), or orElseThrow(). Chain with map/flatMap: optional.map(User::getName).orElse(\"unknown\"). Don\u0027t use Optional as field type, method parameter, or in collections. Return empty collections instead of Optional\u003cList\u003e."
     },
     {
         "id":  "67",
@@ -935,7 +935,7 @@
                         "1 connection per concurrent user"
                     ],
         "correctIndex":  2,
-        "explanation":  "Formula from PostgreSQL wiki: connections = CPU cores * 2 + disk spindles. For SSD: typically 10-20 connections. More connections â‰  better performance - context switching and lock contention increase. Set minimumIdle equal to maximumPoolSize for a fixed pool. A 4-core server with SSD performs well with ~10 connections."
+        "explanation":  "Formula from PostgreSQL wiki: connections = CPU cores * 2 + disk spindles. For SSD: typically 10-20 connections. More connections â‰  better performance â€” context switching and lock contention increase. Set minimumIdle equal to maximumPoolSize for a fixed pool. A 4-core server with SSD performs well with ~10 connections."
     },
     {
         "id":  "68",
@@ -963,7 +963,7 @@
                         "Eager initialization in static block"
                     ],
         "correctIndex":  1,
-        "explanation":  "Holder pattern: `private static class Holder { static final T INSTANCE = new T(); }`. The JVM guarantees class loading is thread-safe - the inner class isn\u0027t loaded until first accessed, providing lazy initialization without any synchronization code. Simpler and safer than double-checked locking."
+        "explanation":  "Holder pattern: `private static class Holder { static final T INSTANCE = new T(); }`. The JVM guarantees class loading is thread-safe â€” the inner class isn\u0027t loaded until first accessed, providing lazy initialization without any synchronization code. Simpler and safer than double-checked locking."
     },
     {
         "id":  "70",
@@ -986,12 +986,12 @@
         "question":  "What is the main advantage of memory-mapped files (MappedByteBuffer) over standard FileInputStream?",
         "choices":  [
                         "They encrypt data automatically",
-                        "Zero-copy I/O - the OS maps file directly into virtual memory, avoiding user-kernel space copies",
+                        "Zero-copy I/O â€” the OS maps file directly into virtual memory, avoiding user-kernel space copies",
                         "They work with files larger than available RAM more efficiently than streams",
                         "They compress data on the fly"
                     ],
         "correctIndex":  1,
-        "explanation":  "Memory-mapped files use FileChannel.map() to map files into virtual memory. The OS handles page faults and caching - no explicit read() calls or buffer copies between kernel and user space. Benefits: zero-copy, OS-managed caching, random access without seeking. Limited to 2GB per mapping (int index). No explicit close/unmap in Java."
+        "explanation":  "Memory-mapped files use FileChannel.map() to map files into virtual memory. The OS handles page faults and caching â€” no explicit read() calls or buffer copies between kernel and user space. Benefits: zero-copy, OS-managed caching, random access without seeking. Limited to 2GB per mapping (int index). No explicit close/unmap in Java."
     },
     {
         "id":  "72",
@@ -1005,7 +1005,7 @@
                         "EnumSet uses native code via JNI"
                     ],
         "correctIndex":  1,
-        "explanation":  "EnumSet uses a single long as a bitmask (for \u003c= 64 enum constants). Add = set bit, remove = clear bit, contains = test bit. Operations like addAll, retainAll, removeAll become single bitwise AND/OR/XOR - O(1) and cache-friendly. No hashing, no collision resolution, no boxing. Always use EnumSet/EnumMap for enum types."
+        "explanation":  "EnumSet uses a single long as a bitmask (for \u003c= 64 enum constants). Add = set bit, remove = clear bit, contains = test bit. Operations like addAll, retainAll, removeAll become single bitwise AND/OR/XOR â€” O(1) and cache-friendly. No hashing, no collision resolution, no boxing. Always use EnumSet/EnumMap for enum types."
     },
     {
         "id":  "73",
@@ -1013,13 +1013,13 @@
         "difficulty":  "medium",
         "question":  "When does string concatenation with \u0027+\u0027 become a performance problem?",
         "choices":  [
-                        "Always - you should never use + for strings",
+                        "Always â€” you should never use + for strings",
                         "Inside loops, where it creates O(n) intermediate objects leading to O(n^2) total copying",
                         "Only when concatenating more than 100 characters",
                         "When used with final String variables"
                     ],
         "correctIndex":  1,
-        "explanation":  "In loops: `for(item:items) result += item;` creates a new String each iteration, copying all previous content. For n items: O(n^2) total characters copied. Use StringBuilder in loops. For simple expressions like \"Hello \" + name, Java 9+ uses invokedynamic + StringConcatFactory which is efficient - no manual StringBuilder needed."
+        "explanation":  "In loops: `for(item:items) result += item;` creates a new String each iteration, copying all previous content. For n items: O(n^2) total characters copied. Use StringBuilder in loops. For simple expressions like \"Hello \" + name, Java 9+ uses invokedynamic + StringConcatFactory which is efficient â€” no manual StringBuilder needed."
     },
     {
         "id":  "74",
@@ -1033,7 +1033,7 @@
                         "Constructor reference"
                     ],
         "correctIndex":  2,
-        "explanation":  "Four types: 1) Static: Integer::parseInt. 2) Instance of particular object: System.out::println. 3) Instance of arbitrary object: String::toUpperCase (equivalent to s -\u003e s.toUpperCase() - called on the stream element). 4) Constructor: ArrayList::new. String::toUpperCase is type 3 because toUpperCase() is called on each String in the stream."
+        "explanation":  "Four types: 1) Static: Integer::parseInt. 2) Instance of particular object: System.out::println. 3) Instance of arbitrary object: String::toUpperCase (equivalent to s -\u003e s.toUpperCase() â€” called on the stream element). 4) Constructor: ArrayList::new. String::toUpperCase is type 3 because toUpperCase() is called on each String in the stream."
     },
     {
         "id":  "75",
@@ -1070,7 +1070,7 @@
         "question":  "What does the Outbox pattern solve in distributed systems?",
         "choices":  [
                         "Load balancing between services",
-                        "The dual-write problem - ensuring database update and event publish happen atomically",
+                        "The dual-write problem â€” ensuring database update and event publish happen atomically",
                         "Service discovery in Kubernetes",
                         "Rate limiting API calls"
                     ],
@@ -1089,7 +1089,7 @@
                         "Protocol translation (REST to gRPC) and response aggregation"
                     ],
         "correctIndex":  2,
-        "explanation":  "API Gateway handles cross-cutting concerns: routing, auth, rate limiting, caching, protocol translation, and aggregation (BFF pattern). Business logic belongs in services - putting it in the gateway makes it a monolithic bottleneck. Keep the gateway thin and focused on infrastructure concerns."
+        "explanation":  "API Gateway handles cross-cutting concerns: routing, auth, rate limiting, caching, protocol translation, and aggregation (BFF pattern). Business logic belongs in services â€” putting it in the gateway makes it a monolithic bottleneck. Keep the gateway thin and focused on infrastructure concerns."
     },
     {
         "id":  "79",
@@ -1103,7 +1103,7 @@
                         "It compiles the service code at deployment time"
                     ],
         "correctIndex":  1,
-        "explanation":  "Envoy sidecar proxies deploy alongside each service, handling: mutual TLS (encryption between services), retries/timeouts, circuit breaking, load balancing, distributed tracing, and metrics collection - all transparently. The service code doesn\u0027t change. Trade-offs: added latency per hop, operational complexity, resource overhead."
+        "explanation":  "Envoy sidecar proxies deploy alongside each service, handling: mutual TLS (encryption between services), retries/timeouts, circuit breaking, load balancing, distributed tracing, and metrics collection â€” all transparently. The service code doesn\u0027t change. Trade-offs: added latency per hop, operational complexity, resource overhead."
     },
     {
         "id":  "80",
@@ -1112,7 +1112,7 @@
         "question":  "What is the main advantage of asynchronous messaging (Kafka/RabbitMQ) over synchronous REST between services?",
         "choices":  [
                         "Messages are always delivered faster than HTTP",
-                        "Temporal decoupling - the consumer doesn\u0027t need to be available at publish time, improving resilience",
+                        "Temporal decoupling â€” the consumer doesn\u0027t need to be available at publish time, improving resilience",
                         "Messaging eliminates the need for service contracts",
                         "Messaging automatically handles transactions across services"
                     ],
@@ -1159,7 +1159,7 @@
                         "@WebMvcTest requires a running server while @SpringBootTest does not"
                     ],
         "correctIndex":  1,
-        "explanation":  "@WebMvcTest(Controller.class): loads only web layer - controller, argument resolvers, filters, advice. Mock services with @MockBean. Fast and focused on HTTP behavior. @SpringBootTest: loads full context (all beans) - use for integration tests. Slower but tests real wiring. Use @DataJpaTest for repository layer only."
+        "explanation":  "@WebMvcTest(Controller.class): loads only web layer â€” controller, argument resolvers, filters, advice. Mock services with @MockBean. Fast and focused on HTTP behavior. @SpringBootTest: loads full context (all beans) â€” use for integration tests. Slower but tests real wiring. Use @DataJpaTest for repository layer only."
     },
     {
         "id":  "84",
@@ -1170,10 +1170,10 @@
                         "Mocks are faster; spies are thread-safe",
                         "A mock returns defaults unless stubbed; a spy wraps a real object and calls real methods unless overridden",
                         "Spies can only be created for interfaces; mocks work for classes",
-                        "There is no difference - they are aliases"
+                        "There is no difference â€” they are aliases"
                     ],
         "correctIndex":  1,
-        "explanation":  "Mock: completely fake, returns null/0/false by default, all interactions recorded. Spy: wraps a real object - real methods execute unless you explicitly stub them with doReturn().when(). Use spy when you want mostly real behavior but need to override or verify specific methods."
+        "explanation":  "Mock: completely fake, returns null/0/false by default, all interactions recorded. Spy: wraps a real object â€” real methods execute unless you explicitly stub them with doReturn().when(). Use spy when you want mostly real behavior but need to override or verify specific methods."
     },
     {
         "id":  "85",
@@ -1187,7 +1187,7 @@
                         "Write all tests first â†’ Implement everything â†’ Never refactor"
                     ],
         "correctIndex":  1,
-        "explanation":  "TDD: 1) Red - write a failing test that defines desired behavior. 2) Green - write the minimum code to make it pass. 3) Refactor - improve design while keeping tests green. Benefits: tests drive design (testable = well-designed), instant regression safety, behavior documentation. Skip/relax for prototyping or trivial CRUD."
+        "explanation":  "TDD: 1) Red â€” write a failing test that defines desired behavior. 2) Green â€” write the minimum code to make it pass. 3) Refactor â€” improve design while keeping tests green. Benefits: tests drive design (testable = well-designed), instant regression safety, behavior documentation. Skip/relax for prototyping or trivial CRUD."
     },
     {
         "id":  "86",
@@ -1201,7 +1201,7 @@
                         "synchronized or volatile"
                     ],
         "correctIndex":  1,
-        "explanation":  "Sealed classes restrict extension with `permits`. Subclasses must be: final (no further extension), sealed (controlled extension continues), or non-sealed (opens up extension again). This enables exhaustive pattern matching - the compiler knows all possible subtypes and warns about missing cases in switch."
+        "explanation":  "Sealed classes restrict extension with `permits`. Subclasses must be: final (no further extension), sealed (controlled extension continues), or non-sealed (opens up extension again). This enables exhaustive pattern matching â€” the compiler knows all possible subtypes and warns about missing cases in switch."
     },
     {
         "id":  "87",
@@ -1224,7 +1224,7 @@
         "question":  "How does a text block determine indentation stripping?",
         "choices":  [
                         "All leading whitespace is always preserved",
-                        "The position of the closing triple-quote determines the baseline - common leading whitespace is stripped",
+                        "The position of the closing triple-quote determines the baseline â€” common leading whitespace is stripped",
                         "Indentation is always removed completely",
                         "You must explicitly call trim() on the result"
                     ],
@@ -1243,7 +1243,7 @@
                         "Optimizing network routing between data centers"
                     ],
         "correctIndex":  1,
-        "explanation":  "Strangler Fig: gradually replace monolith functionality with microservices. Route traffic via API gateway - new requests go to new service, legacy continues working. Once validated, remove old code. Benefits: low risk (gradual), always deployable, easy rollback. The anti-pattern is big-bang rewrite."
+        "explanation":  "Strangler Fig: gradually replace monolith functionality with microservices. Route traffic via API gateway â€” new requests go to new service, legacy continues working. Once validated, remove old code. Benefits: low risk (gradual), always deployable, easy rollback. The anti-pattern is big-bang rewrite."
     },
     {
         "id":  "90",
@@ -1257,7 +1257,7 @@
                         "H2 is not compatible with JUnit"
                     ],
         "correctIndex":  1,
-        "explanation":  "H2 in compatibility mode doesn\u0027t fully replicate production database behavior (stored procedures, full-text search, JSON operators differ). Testcontainers runs the actual PostgreSQL/MySQL/Redis in ephemeral Docker containers - tests match production exactly. Spring Boot @ServiceConnection auto-configures the datasource. Requires Docker installed."
+        "explanation":  "H2 in compatibility mode doesn\u0027t fully replicate production database behavior (stored procedures, full-text search, JSON operators differ). Testcontainers runs the actual PostgreSQL/MySQL/Redis in ephemeral Docker containers â€” tests match production exactly. Spring Boot @ServiceConnection auto-configures the datasource. Requires Docker installed."
     },
     {
         "id":  "91",
@@ -1266,7 +1266,7 @@
         "question":  "What does the Foreign Function \u0026 Memory API (Project Panama) replace?",
         "choices":  [
                         "Java serialization",
-                        "JNI (Java Native Interface) - providing safe, efficient native code access without writing C",
+                        "JNI (Java Native Interface) â€” providing safe, efficient native code access without writing C",
                         "The Java Collections Framework",
                         "JDBC database connectivity"
                     ],
@@ -1280,7 +1280,7 @@
         "question":  "In a Kubernetes environment, is a dedicated service discovery tool like Eureka still necessary?",
         "choices":  [
                         "Yes, Eureka is always required for microservices",
-                        "No - Kubernetes provides built-in service discovery via DNS and kube-proxy load balancing",
+                        "No â€” Kubernetes provides built-in service discovery via DNS and kube-proxy load balancing",
                         "Only if you use more than 10 services",
                         "Eureka is required for health checks"
                     ],
@@ -1322,7 +1322,7 @@
         "question":  "What problem does the Java Module System (JPMS) solve that the classpath cannot?",
         "choices":  [
                         "Faster compilation times",
-                        "Strong encapsulation - internal packages are truly hidden, and missing dependencies fail at startup rather than runtime",
+                        "Strong encapsulation â€” internal packages are truly hidden, and missing dependencies fail at startup rather than runtime",
                         "Automatic dependency download like Maven",
                         "Better syntax highlighting in IDEs"
                     ],
@@ -1336,12 +1336,12 @@
         "question":  "Which library is best suited for testing asynchronous code with polling and timeout?",
         "choices":  [
                         "Mockito",
-                        "Awaitility - it polls a condition with configurable timeout and interval",
+                        "Awaitility â€” it polls a condition with configurable timeout and interval",
                         "JUnit @Timeout annotation alone",
                         "Thread.sleep() with assertions"
                     ],
         "correctIndex":  1,
-        "explanation":  "Awaitility: `await().atMost(5, SECONDS).until(() -\u003e resultReady())` - polls a condition with configurable interval and timeout. Better than Thread.sleep (wastes time or is flaky). For CompletableFuture: use .join() or .get(timeout). For Spring @Async: use Awaitility or ArgumentCaptor to capture callbacks."
+        "explanation":  "Awaitility: `await().atMost(5, SECONDS).until(() -\u003e resultReady())` â€” polls a condition with configurable interval and timeout. Better than Thread.sleep (wastes time or is flaky). For CompletableFuture: use .join() or .get(timeout). For Spring @Async: use Awaitility or ArgumentCaptor to capture callbacks."
     },
     {
         "id":  "97",
@@ -1364,7 +1364,7 @@
         "question":  "What is the recommended replacement for RestTemplate in new Spring applications?",
         "choices":  [
                         "HttpURLConnection",
-                        "WebClient (Spring WebFlux) - supports both blocking and non-blocking calls",
+                        "WebClient (Spring WebFlux) â€” supports both blocking and non-blocking calls",
                         "Apache HttpClient directly",
                         "Socket programming"
                     ],
@@ -1383,7 +1383,7 @@
                         "Memory usage during tests"
                     ],
         "correctIndex":  1,
-        "explanation":  "Code coverage measures execution (did tests run this line?). Mutation testing measures detection (if I change this line, does a test fail?). Mutations: change + to -, negate conditions, remove returns. Survived mutants = weak tests. PIT (pitest) for Java. Run on critical business logic - it\u0027s slow (runs tests many times per mutation)."
+        "explanation":  "Code coverage measures execution (did tests run this line?). Mutation testing measures detection (if I change this line, does a test fail?). Mutations: change + to -, negate conditions, remove returns. Survived mutants = weak tests. PIT (pitest) for Java. Run on critical business logic â€” it\u0027s slow (runs tests many times per mutation)."
     },
     {
         "id":  "100",
@@ -1392,7 +1392,7 @@
         "question":  "What does Structured Concurrency (Java 21 preview) guarantee that ExecutorService does not?",
         "choices":  [
                         "Faster thread creation",
-                        "All subtasks complete (or are cancelled) before the parent scope exits - preventing thread leaks and dangling tasks",
+                        "All subtasks complete (or are cancelled) before the parent scope exits â€” preventing thread leaks and dangling tasks",
                         "Automatic retry of failed tasks",
                         "Priority-based scheduling"
                     ],

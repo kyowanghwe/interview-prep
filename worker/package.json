@@ -1,0 +1,13 @@
+{
+  "name": "jip-oauth-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that exchanges a GitHub OAuth code for an access token (for java-interview-prep cross-device sync).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

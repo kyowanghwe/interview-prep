@@ -1,5 +1,9 @@
 // ===== Senior Java Interview Prep - Main App =====
 
+import { login, logout, handleRedirect, isLoggedIn, getUser } from './auth.js';
+import { pullProgress, mergeProgress, schedulePush, clearGistCache } from './sync.js';
+import { isSyncConfigured } from './config.js';
+
 const STORAGE_KEYS = {
     SHEET_URL: 'jip_sheet_url',
     PROGRESS: 'jip_progress',
@@ -31,6 +35,13 @@ const elements = {
     sheetUrl: document.getElementById('sheetUrl'),
     saveConfigBtn: document.getElementById('saveConfigBtn'),
     useLocalBtn: document.getElementById('useLocalBtn'),
+    // Auth / sync
+    loginBtn: document.getElementById('loginBtn'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    authUser: document.getElementById('authUser'),
+    authAvatar: document.getElementById('authAvatar'),
+    authName: document.getElementById('authName'),
+    syncStatus: document.getElementById('syncStatus'),
 };
 
 // ===== Init =====
@@ -38,7 +49,23 @@ async function init() {
     setupEventListeners();
     loadConfig();
     updateStreak();
+
+    // Complete any pending GitHub OAuth redirect before loading data.
+    let justLoggedIn = false;
+    try {
+        const result = await handleRedirect();
+        justLoggedIn = result.justLoggedIn;
+    } catch (e) {
+        console.warn('OAuth redirect handling failed:', e);
+    }
+
+    updateAuthUI();
     await loadQuestions();
+
+    // If logged in, pull remote progress and merge it in.
+    if (isLoggedIn()) {
+        await syncPull(justLoggedIn);
+    }
 }
 
 // ===== Data Loading =====
@@ -360,9 +387,9 @@ function generateDailySet() {
 
     // Generate new daily set — prefer unseen questions
     const unseen = allQuestions.filter(q => !progress[q.id]?.completed);
-    const pool = unseen.length >= 20 ? unseen : allQuestions;
+    const pool = unseen.length >= 10 ? unseen : allQuestions;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const dailySet = shuffled.slice(0, 20);
+    const dailySet = shuffled.slice(0, 10);
 
     // Save for today
     localStorage.setItem(STORAGE_KEYS.DAILY_SET, JSON.stringify({
@@ -393,7 +420,17 @@ function loadProgress() {
 }
 
 function saveProgress() {
+    // Instant local write (offline cache + fallback).
     localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+
+    // If logged in, push to the gist (debounced).
+    if (isLoggedIn()) {
+        setSyncStatus('saving');
+        schedulePush(
+            () => progress,
+            (err) => setSyncStatus(err ? 'error' : 'synced')
+        );
+    }
 }
 
 function updateStats() {
@@ -472,6 +509,87 @@ function useLocalData() {
     loadQuestions();
 }
 
+// ===== Auth & Sync =====
+function updateAuthUI() {
+    const configured = isSyncConfigured();
+    const loggedIn = isLoggedIn();
+    const user = getUser();
+
+    if (elements.loginBtn) {
+        // Hide login entirely if sync isn't set up yet.
+        elements.loginBtn.style.display = !configured || loggedIn ? 'none' : '';
+        elements.loginBtn.disabled = !configured;
+    }
+    if (elements.authUser) {
+        elements.authUser.style.display = loggedIn ? 'flex' : 'none';
+    }
+    if (loggedIn && user) {
+        if (elements.authAvatar) {
+            elements.authAvatar.src = user.avatar_url || '';
+            elements.authAvatar.alt = user.login || 'user';
+        }
+        if (elements.authName) {
+            elements.authName.textContent = user.name || user.login || 'GitHub user';
+        }
+    }
+    if (!configured) {
+        setSyncStatus('unconfigured');
+    } else if (loggedIn) {
+        setSyncStatus('synced');
+    } else {
+        setSyncStatus('local');
+    }
+}
+
+function setSyncStatus(state) {
+    if (!elements.syncStatus) return;
+    const map = {
+        unconfigured: '',
+        local: '&#128421;&#65039; Local only (not signed in)',
+        saving: '&#8635; Syncing\u2026',
+        synced: '&#9989; Synced to GitHub',
+        error: '&#9888;&#65039; Sync failed \u2014 saved locally',
+        pulling: '&#8635; Loading your progress\u2026',
+    };
+    elements.syncStatus.innerHTML = map[state] ?? '';
+    elements.syncStatus.dataset.state = state;
+}
+
+// Pull remote progress and merge it into local state.
+async function syncPull(justLoggedIn) {
+    setSyncStatus('pulling');
+    try {
+        const remote = await pullProgress();
+        const merged = mergeProgress(progress, remote);
+        progress = merged;
+
+        // Persist the merged result locally.
+        localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+
+        // If we just logged in and local had data the remote lacked, push the merge back.
+        if (justLoggedIn) {
+            schedulePush(() => progress, (err) => setSyncStatus(err ? 'error' : 'synced'));
+        }
+
+        applyFilters();
+        updateStats();
+        setSyncStatus('synced');
+    } catch (e) {
+        console.warn('Initial sync pull failed:', e);
+        setSyncStatus('error');
+    }
+}
+
+function handleLogin() {
+    login();
+}
+
+function handleLogout() {
+    logout();
+    clearGistCache();
+    updateAuthUI();
+}
+
 // ===== Utilities =====
 function showLoading(show) {
     if (show) {
@@ -500,6 +618,8 @@ function setupEventListeners() {
     elements.resetProgressBtn.addEventListener('click', resetProgress);
     elements.saveConfigBtn.addEventListener('click', saveConfig);
     elements.useLocalBtn.addEventListener('click', useLocalData);
+    if (elements.loginBtn) elements.loginBtn.addEventListener('click', handleLogin);
+    if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', handleLogout);
 }
 
 // ===== Start =====
