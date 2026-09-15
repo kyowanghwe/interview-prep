@@ -72,6 +72,11 @@
             <div class="controls__actions">
                 <button id="shuffleBtn" class="btn btn--secondary">&#128256; Shuffle</button>
                 <button id="dailySetBtn" class="btn btn--primary">&#127919; Daily Set (10)</button>
+                <select id="dailySetSize" class="controls__select" title="Daily set size" aria-label="Daily set size">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
                 <button id="resetProgressBtn" class="btn btn--danger">&#128260; Reset</button>
             </div>
         </section>
@@ -108,9 +113,13 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Built for daily practice. Add your own questions via Google Sheets or edit <code>data/questions.json</code>.</p>
+            <p>Built for daily practice. Add your own questions via Google Sheets or edit <code>data/questions.csv</code>.</p>
         </footer>
     </div>
+
+    <button id="backToTopBtn" class="back-to-top" title="Back to top" aria-label="Back to top">
+        &#8593;
+    </button>
 
     <script src="js/app.js" type="module"></script>
 </body>

@@ -26,6 +26,7 @@ const elements = {
     statusFilter: document.getElementById('statusFilter'),
     shuffleBtn: document.getElementById('shuffleBtn'),
     dailySetBtn: document.getElementById('dailySetBtn'),
+    dailySetSize: document.getElementById('dailySetSize'),
     resetProgressBtn: document.getElementById('resetProgressBtn'),
     totalQuestions: document.getElementById('totalQuestions'),
     completedToday: document.getElementById('completedToday'),
@@ -42,6 +43,7 @@ const elements = {
     authAvatar: document.getElementById('authAvatar'),
     authName: document.getElementById('authName'),
     syncStatus: document.getElementById('syncStatus'),
+    backToTopBtn: document.getElementById('backToTopBtn'),
 };
 
 // ===== Init =====
@@ -60,6 +62,7 @@ async function init() {
     }
 
     updateAuthUI();
+    updateDailySetUI();
     await loadQuestions();
 
     // If logged in, pull remote progress and merge it in.
@@ -180,9 +183,10 @@ function parseCSVLine(line) {
 }
 
 async function fetchLocalQuestions() {
-    const response = await fetch('data/questions.json');
+    const response = await fetch('data/questions.csv');
     if (!response.ok) throw new Error('Local questions not found');
-    return await response.json();
+    const csvText = await response.text();
+    return parseCSV(csvText);
 }
 
 // ===== Rendering =====
@@ -368,12 +372,13 @@ function shuffleQuestions() {
     renderQuestions(filteredQuestions);
 }
 
-function generateDailySet() {
+function generateDailySet(forceNew = false) {
+    const size = getDailySetSize();
     const today = new Date().toISOString().split('T')[0];
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEYS.DAILY_SET) || '{}');
 
-    // If we already have a set for today, use it
-    if (stored.date === today && stored.ids) {
+    // Reuse today's set only if it matches the current size and we're not forcing a new one.
+    if (!forceNew && stored.date === today && stored.size === size && stored.ids) {
         const dailyQuestions = stored.ids
             .map(id => allQuestions.find(q => q.id === id))
             .filter(Boolean);
@@ -387,13 +392,14 @@ function generateDailySet() {
 
     // Generate new daily set — prefer unseen questions
     const unseen = allQuestions.filter(q => !progress[q.id]?.completed);
-    const pool = unseen.length >= 10 ? unseen : allQuestions;
+    const pool = unseen.length >= size ? unseen : allQuestions;
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const dailySet = shuffled.slice(0, 10);
+    const dailySet = shuffled.slice(0, size);
 
     // Save for today
     localStorage.setItem(STORAGE_KEYS.DAILY_SET, JSON.stringify({
         date: today,
+        size,
         ids: dailySet.map(q => q.id),
     }));
 
@@ -403,11 +409,42 @@ function generateDailySet() {
 
 function resetProgress() {
     if (!confirm('Reset all progress? This cannot be undone.')) return;
+    // Keep user settings (e.g. daily-set size); only clear question progress.
+    const keptSettings = getSettings();
     progress = {};
+    if (Object.keys(keptSettings).length) progress[SETTINGS_KEY] = keptSettings;
     saveProgress();
     localStorage.removeItem(STORAGE_KEYS.DAILY_SET);
     applyFilters();
     updateStats();
+}
+
+// ===== Settings (synced via the progress gist under a reserved key) =====
+const SETTINGS_KEY = '__settings';
+const DEFAULT_DAILY_SIZE = 10;
+
+function getSettings() {
+    return (progress && progress[SETTINGS_KEY]) || {};
+}
+
+function getDailySetSize() {
+    const s = getSettings().dailySetSize;
+    return [10, 15, 20].includes(s) ? s : DEFAULT_DAILY_SIZE;
+}
+
+function setDailySetSize(size) {
+    if (!progress[SETTINGS_KEY]) progress[SETTINGS_KEY] = {};
+    progress[SETTINGS_KEY].dailySetSize = size;
+    saveProgress(); // persists locally + pushes to gist when logged in
+}
+
+// Reflect the current size in the dropdown + button label.
+function updateDailySetUI() {
+    const size = getDailySetSize();
+    if (elements.dailySetSize) elements.dailySetSize.value = String(size);
+    if (elements.dailySetBtn) {
+        elements.dailySetBtn.innerHTML = `&#127919; Daily Set (${size})`;
+    }
 }
 
 // ===== Progress & Stats =====
@@ -571,6 +608,7 @@ async function syncPull(justLoggedIn) {
             schedulePush(() => progress, (err) => setSyncStatus(err ? 'error' : 'synced'));
         }
 
+        updateDailySetUI();
         applyFilters();
         updateStats();
         setSyncStatus('synced');
@@ -614,12 +652,33 @@ function setupEventListeners() {
     elements.difficultyFilter.addEventListener('change', applyFilters);
     elements.statusFilter.addEventListener('change', applyFilters);
     elements.shuffleBtn.addEventListener('click', shuffleQuestions);
-    elements.dailySetBtn.addEventListener('click', generateDailySet);
+    elements.dailySetBtn.addEventListener('click', () => generateDailySet());
+    if (elements.dailySetSize) {
+        elements.dailySetSize.addEventListener('change', (e) => {
+            const size = parseInt(e.target.value, 10) || DEFAULT_DAILY_SIZE;
+            setDailySetSize(size);
+            updateDailySetUI();
+            generateDailySet(true); // regenerate with the new size
+        });
+    }
     elements.resetProgressBtn.addEventListener('click', resetProgress);
     elements.saveConfigBtn.addEventListener('click', saveConfig);
     elements.useLocalBtn.addEventListener('click', useLocalData);
     if (elements.loginBtn) elements.loginBtn.addEventListener('click', handleLogin);
     if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', handleLogout);
+
+    // Back-to-top: show after scrolling down, smooth-scroll to top on click.
+    if (elements.backToTopBtn) {
+        const toggleBackToTop = () => {
+            const show = window.scrollY > 400;
+            elements.backToTopBtn.classList.toggle('is-visible', show);
+        };
+        window.addEventListener('scroll', toggleBackToTop, { passive: true });
+        toggleBackToTop();
+        elements.backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
 }
 
 // ===== Start =====

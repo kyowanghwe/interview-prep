@@ -28,7 +28,7 @@ Daily practice questions for senior-level Java interviews. 100 questions coverin
    ```
 3. Open `http://localhost:8000`
 
-The site loads questions from `data/questions.json` by default.
+The site loads questions from `data/questions.csv` by default.
 
 ## Deploy to GitHub Pages (Free)
 
@@ -179,17 +179,27 @@ private gist named `jip-progress.json` on any device where you sign in.
 
 ## Adding Questions Locally
 
-Edit `data/questions.json` directly. Each question follows this structure:
+Edit `data/questions.csv` directly. It's a multiple-choice format with these columns:
 
-```json
-{
-  "id": "101",
-  "topic": "Spring Framework",
-  "difficulty": "hard",
-  "question": "How does Spring handle circular dependencies?",
-  "answer": "Spring resolves circular deps for singleton beans using three-level cache..."
-}
 ```
+id,topic,difficulty,question,choice_a,choice_b,choice_c,choice_d,correct,explanation
+```
+
+- **id**: unique identifier
+- **topic**: category name (e.g. "Spring Framework")
+- **difficulty**: `medium`, `hard`, or `expert`
+- **question**: the question text
+- **choice_a … choice_d**: the four answer options
+- **correct**: the correct letter — `A`, `B`, `C`, or `D`
+- **explanation**: why the answer is correct
+
+Wrap any field containing a comma in double quotes, and escape inner quotes by doubling them (`""`). Example row:
+
+```
+"126","Spring Framework","hard","How does Spring handle circular dependencies?","Throws immediately","Uses a three-level cache exposing early references","Serializes beans to disk","Creates prototype proxies","B","Spring exposes A's early reference to B via the singletonFactories cache..."
+```
+
+The Google Sheet uses these same columns, so local CSV and the sheet stay interchangeable.
 
 ## Topic Categories
 

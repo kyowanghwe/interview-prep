@@ -144,8 +144,10 @@ export async function pushProgress(progress) {
 // that is "more advanced": completed wins over not, and the latest
 // completedDate breaks ties. Bookmarks and answered choices are OR-merged.
 export function mergeProgress(local, remote) {
+    const SETTINGS_KEY = '__settings';
     const merged = {};
     const ids = new Set([...Object.keys(local || {}), ...Object.keys(remote || {})]);
+    ids.delete(SETTINGS_KEY); // handled separately below, not as a question entry
 
     for (const id of ids) {
         const a = (local && local[id]) || {};
@@ -169,6 +171,13 @@ export function mergeProgress(local, remote) {
 
         if (Object.keys(entry).length) merged[id] = entry;
     }
+
+    // Merge settings: local values win when present (a local change is the most
+    // recent intent), otherwise fall back to the remote settings.
+    const localSettings = (local && local[SETTINGS_KEY]) || {};
+    const remoteSettings = (remote && remote[SETTINGS_KEY]) || {};
+    const settings = { ...remoteSettings, ...localSettings };
+    if (Object.keys(settings).length) merged[SETTINGS_KEY] = settings;
 
     return merged;
 }
