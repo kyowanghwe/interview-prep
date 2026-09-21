@@ -82,7 +82,7 @@ export async function handleRedirect() {
     localStorage.removeItem(AUTH_KEYS.STATE);
 
     try {
-        const res = await fetch(CONFIG.WORKER_URL, {
+        const res = await fetch(`${CONFIG.WORKER_URL}/exchange`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code }),

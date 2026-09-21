@@ -6,18 +6,13 @@ export const CONFIG = {
     // The Client ID of your GitHub OAuth App (public — safe to commit).
     GITHUB_CLIENT_ID: 'Ov23liCucrPQFY4B2YiG',
 
-    // Your deployed Cloudflare Worker URL that does the token exchange.
+    // Your deployed Cloudflare Worker URL.
+    // The Worker handles OAuth exchange, progress save/load, and leaderboard.
     // e.g. 'https://jip-oauth.your-subdomain.workers.dev'
     WORKER_URL: 'https://jip-oauth.huycan19991999.workers.dev',
 
-    // OAuth scope. 'gist' is all we need to read/write the progress gist.
-    OAUTH_SCOPE: 'gist',
-
-    // Name of the file stored inside the progress gist.
-    GIST_FILENAME: 'jip-progress.json',
-
-    // A short description used when the app auto-creates the progress gist.
-    GIST_DESCRIPTION: 'Java Interview Prep — progress sync (auto-managed)',
+    // OAuth scope. 'read:user' is all we need to identify the user.
+    OAUTH_SCOPE: 'read:user',
 };
 
 // True once the placeholders above have been replaced with real values.

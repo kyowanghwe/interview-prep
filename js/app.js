@@ -1,7 +1,7 @@
 // ===== Senior Java Interview Prep - Main App =====
 
 import { login, logout, handleRedirect, isLoggedIn, getUser } from './auth.js';
-import { pullProgress, mergeProgress, schedulePush, clearGistCache } from './sync.js';
+import { pullProgress, mergeProgress, schedulePush, clearGistCache, fetchLeaderboard } from './sync.js';
 import { isSyncConfigured } from './config.js';
 
 const STORAGE_KEYS = {
@@ -46,6 +46,10 @@ const elements = {
     authName: document.getElementById('authName'),
     syncStatus: document.getElementById('syncStatus'),
     backToTopBtn: document.getElementById('backToTopBtn'),
+    leaderboardList: document.getElementById('leaderboardList'),
+    leaderboardRefreshBtn: document.getElementById('leaderboardRefreshBtn'),
+    leaderboardToggleBtn: document.getElementById('leaderboardToggleBtn'),
+    leaderboardSection: document.getElementById('leaderboardSection'),
 };
 
 // ===== Init =====
@@ -765,6 +769,17 @@ function setupEventListeners() {
     elements.useLocalBtn.addEventListener('click', useLocalData);
     if (elements.loginBtn) elements.loginBtn.addEventListener('click', handleLogin);
     if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', handleLogout);
+    if (elements.leaderboardRefreshBtn) {
+        elements.leaderboardRefreshBtn.addEventListener('click', loadLeaderboard);
+    }
+    if (elements.leaderboardToggleBtn) {
+        elements.leaderboardToggleBtn.addEventListener('click', () => {
+            const collapsed = elements.leaderboardSection.classList.toggle('is-collapsed');
+            const chevron = document.getElementById('leaderboardChevron');
+            if (chevron) chevron.style.transform = collapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+            elements.leaderboardToggleBtn.title = collapsed ? 'Expand' : 'Collapse';
+        });
+    }
 
     // Back-to-top: show after scrolling down, smooth-scroll to top on click.
     if (elements.backToTopBtn) {
@@ -780,5 +795,64 @@ function setupEventListeners() {
     }
 }
 
+// ===== Leaderboard =====
+async function loadLeaderboard() {
+    if (!elements.leaderboardList) return;
+    elements.leaderboardList.innerHTML = '<p class="leaderboard__empty">Loading...</p>';
+    try {
+        const board = await fetchLeaderboard();
+        renderLeaderboard(board);
+    } catch (e) {
+        elements.leaderboardList.innerHTML =
+            '<p class="leaderboard__empty">Could not load leaderboard.</p>';
+    }
+}
+
+function renderLeaderboard(board) {
+    if (!board || board.length === 0) {
+        elements.leaderboardList.innerHTML =
+            '<p class="leaderboard__empty">No entries yet — be the first to log in!</p>';
+        return;
+    }
+
+    const rankEmoji = (i) => {
+        if (i === 0) return '&#127947;';
+        if (i === 1) return '&#129352;';
+        if (i === 2) return '&#129353;';
+        return `${i + 1}`;
+    };
+
+    const timeAgo = (iso) => {
+        if (!iso) return '';
+        const diff = Date.now() - new Date(iso).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins}m ago`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h ago`;
+        return `${Math.floor(hrs / 24)}d ago`;
+    };
+
+    elements.leaderboardList.innerHTML = board.map((entry, i) => `
+        <div class="leaderboard__row">
+            <span class="leaderboard__rank leaderboard__rank--${i + 1}">${rankEmoji(i)}</span>
+            <img class="leaderboard__avatar"
+                 src="${escapeHtml(entry.avatar || '')}"
+                 alt="${escapeHtml(entry.username || '')}"
+                 width="32" height="32"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><circle cx=%2216%22 cy=%2216%22 r=%2216%22 fill=%22%236366f1%22/></svg>'">
+            <span class="leaderboard__name">${escapeHtml(entry.username || 'unknown')}</span>
+            <div class="leaderboard__stats">
+                <span class="leaderboard__completed">&#9989; ${entry.completed}</span>
+                ${entry.needsRetry > 0
+                    ? `<span class="leaderboard__retry">&#8635; ${entry.needsRetry}</span>`
+                    : ''}
+                <span class="leaderboard__updated">${timeAgo(entry.updated_at)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
 // ===== Start =====
 init();
+loadLeaderboard();

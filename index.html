@@ -95,6 +95,29 @@
             </div>
         </main>
 
+        <!-- Leaderboard (top-right panel) -->
+        <aside class="leaderboard" id="leaderboardSection">
+            <div class="leaderboard__header">
+                <h3 class="leaderboard__title">&#127942; Leaderboard</h3>
+                <div class="leaderboard__controls">
+                    <button id="leaderboardRefreshBtn" class="leaderboard__icon-btn" title="Refresh">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                    </button>
+                    <button id="leaderboardToggleBtn" class="leaderboard__icon-btn" title="Collapse">
+                        <svg id="leaderboardChevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="18 15 12 9 6 15"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="leaderboardList" class="leaderboard__list">
+                <p class="leaderboard__empty">Loading...</p>
+            </div>
+        </aside>
+
         <!-- Data Source Config -->
         <section class="config" id="configSection">
             <h3 class="config__title">&#9881;&#65039; Data Source</h3>

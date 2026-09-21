@@ -13,6 +13,15 @@ compatibility_date = "2024-11-01"
 ALLOWED_ORIGIN = "https://kyowanghwe.github.io"
 
 # ---------------------------------------------------------------------------
+# D1 database binding — replace database_id with the value from:
+#   npx wrangler d1 create jip-progress
+# ---------------------------------------------------------------------------
+[[d1_databases]]
+binding = "DB"
+database_name = "jip-progress"
+database_id = "ad08e125-440a-42c7-b55e-52cf49769ab4"
+
+# ---------------------------------------------------------------------------
 # Secrets are NOT stored here. Set them with wrangler (they are encrypted and
 # never committed):
 #
