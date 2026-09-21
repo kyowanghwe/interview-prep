@@ -208,6 +208,10 @@ async function handleLeaderboard(request, env, corsHeaders) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Simple in-memory cache for GitHub user lookups (lives for the Worker instance lifetime).
+// Avoids calling GitHub API on every request for the same token.
+const userCache = new Map();
+
 // Calls GitHub API to verify the bearer token and return the user profile.
 // Returns null if the token is missing or invalid.
 async function getGitHubUser(request) {
@@ -215,16 +219,23 @@ async function getGitHubUser(request) {
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
 
+  // Return cached result if available.
+  if (userCache.has(token)) return userCache.get(token);
+
   try {
     const res = await fetch(`${GH_API}/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'java-interview-prep-worker/1.0',
       },
     });
     if (!res.ok) return null;
-    return await res.json();
+    const user = await res.json();
+    // Cache for the duration of this Worker instance.
+    userCache.set(token, user);
+    return user;
   } catch {
     return null;
   }
