@@ -296,6 +296,22 @@ body {
     border-left: 3px solid var(--color-warning);
 }
 
+.question-card--retry {
+    border-left: 3px solid var(--color-danger);
+    background: rgba(239, 68, 68, 0.04);
+}
+
+.question-card__retry-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-danger);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .question-card__header {
     display: flex;
     justify-content: space-between;
@@ -354,11 +370,13 @@ body {
     font-size: 1.1rem;
     padding: 0.2rem;
     border-radius: 4px;
-    transition: background 0.2s;
+    transition: background 0.2s, color 0.2s;
+    color: rgba(255, 255, 255, 0.3);
 }
 
 .question-card__btn:hover {
     background: var(--color-surface-hover);
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .question-card__question {

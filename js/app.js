@@ -10,12 +10,14 @@ const STORAGE_KEYS = {
     STREAK: 'jip_streak',
     LAST_DATE: 'jip_last_date',
     DAILY_SET: 'jip_daily_set',
+    LAST_WRONG_RESET: 'jip_last_wrong_reset',
 };
 
 // ===== State =====
 let allQuestions = [];
 let filteredQuestions = [];
 let progress = loadProgress();
+let isDailyActive = false; // tracks whether the daily set view is currently active
 
 // ===== DOM Elements =====
 const elements = {
@@ -69,6 +71,24 @@ async function init() {
     if (isLoggedIn()) {
         await syncPull(justLoggedIn);
     }
+
+    // Once per day, reset wrong-answer questions so they can be retried.
+    maybeResetWrongAnswersForNewDay();
+}
+
+// Reset wrong answers when the day rolls over, independent of clicking the
+// Daily Set button. Tracks the last reset date so it only runs once per day.
+function maybeResetWrongAnswersForNewDay() {
+    const today = new Date().toISOString().split('T')[0];
+    const lastReset = localStorage.getItem(STORAGE_KEYS.LAST_WRONG_RESET);
+    if (lastReset === today) return;
+
+    resetWrongAnswers();
+    localStorage.setItem(STORAGE_KEYS.LAST_WRONG_RESET, today);
+
+    // Refresh the view so unlocked questions render as answerable again.
+    applyFilters();
+    updateStats();
 }
 
 // ===== Data Loading =====
@@ -206,11 +226,15 @@ function renderQuestions(questions) {
         const isCompleted = status.completed;
         const isBookmarked = status.bookmarked;
         const answered = status.answered; // index of chosen answer
+        // A "retry" question was answered wrong on a previous day, unlocked for
+        // another attempt (has wrongDate, not completed, no current answer).
+        const isRetry = status.wrongDate && !isCompleted && answered === undefined;
 
         const cardClass = [
             'question-card',
             isCompleted ? 'question-card--completed' : '',
             isBookmarked ? 'question-card--bookmarked' : '',
+            isRetry ? 'question-card--retry' : '',
         ].filter(Boolean).join(' ');
 
         const letters = ['A', 'B', 'C', 'D'];
@@ -254,6 +278,7 @@ function renderQuestions(questions) {
                         <span class="question-card__difficulty question-card__difficulty--${q.difficulty}">
                             ${q.difficulty}
                         </span>
+                        ${isRetry ? '<span class="question-card__retry-badge">&#8635; Retry</span>' : ''}
                     </div>
                     <div class="question-card__actions">
                         <button class="question-card__btn" onclick="toggleBookmark('${q.id}')" 
@@ -300,6 +325,9 @@ function populateTopicFilter() {
 }
 
 function applyFilters() {
+    // Changing a filter exits daily set mode.
+    setDailyActive(false);
+
     const topic = elements.topicFilter.value;
     const difficulty = elements.difficultyFilter.value;
     const status = elements.statusFilter.value;
@@ -333,12 +361,17 @@ window.selectChoice = function (id, chosenIndex) {
     if (!question) return;
 
     const correctIdx = question.correctIndex ?? 0;
+    const today = new Date().toISOString().split('T')[0];
     progress[id].answered = chosenIndex;
 
-    // Auto-mark complete if correct
     if (chosenIndex === correctIdx) {
+        // Correct: mark complete and clear any "wrong" tracking.
         progress[id].completed = true;
-        progress[id].completedDate = new Date().toISOString().split('T')[0];
+        progress[id].completedDate = today;
+        delete progress[id].wrongDate;
+    } else {
+        // Wrong: remember the day so it can be prioritized in a later daily set.
+        progress[id].wrongDate = today;
     }
 
     saveProgress();
@@ -386,15 +419,30 @@ function generateDailySet(forceNew = false) {
         if (dailyQuestions.length > 0) {
             filteredQuestions = dailyQuestions;
             renderQuestions(filteredQuestions);
+            updateProgressBar();
+            setDailyActive(true);
             return;
         }
     }
 
-    // Generate new daily set — prefer unseen questions
-    const unseen = allQuestions.filter(q => !progress[q.id]?.completed);
-    const pool = unseen.length >= size ? unseen : allQuestions;
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const dailySet = shuffled.slice(0, size);
+    // Wrong-answer questions are reset once per day at app start via
+    // maybeResetWrongAnswersForNewDay(), which unlocks them but keeps `wrongDate`.
+    // Build the set with those retry questions FIRST, then fill with unseen ones.
+    const isRetry = q => progress[q.id]?.wrongDate && !progress[q.id]?.completed;
+
+    const retry = allQuestions.filter(isRetry);
+    const unseen = allQuestions.filter(q => !isRetry(q) && !progress[q.id]?.completed);
+
+    const shuffledRetry = [...retry].sort(() => Math.random() - 0.5);
+    const shuffledUnseen = [...unseen].sort(() => Math.random() - 0.5);
+
+    // Retry questions first (guaranteed), then unseen, capped at the set size.
+    let dailySet = [...shuffledRetry, ...shuffledUnseen].slice(0, size);
+
+    // If everything is completed, fall back to a random slice of all questions.
+    if (dailySet.length === 0) {
+        dailySet = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, size);
+    }
 
     // Save for today
     localStorage.setItem(STORAGE_KEYS.DAILY_SET, JSON.stringify({
@@ -405,6 +453,49 @@ function generateDailySet(forceNew = false) {
 
     filteredQuestions = dailySet;
     renderQuestions(filteredQuestions);
+    updateProgressBar();
+    setDailyActive(true);
+}
+
+// Exit daily set mode and restore the full filtered list.
+function exitDailySet() {
+    setDailyActive(false);
+    applyFilters();
+}
+
+// Set the daily-active state and sync the button's highlighted appearance.
+function setDailyActive(active) {
+    isDailyActive = active;
+    if (elements.dailySetBtn) {
+        elements.dailySetBtn.classList.toggle('btn--primary', active);
+        elements.dailySetBtn.classList.toggle('btn--secondary', !active);
+        elements.dailySetBtn.classList.remove('btn--active');
+        const size = getDailySetSize();
+        elements.dailySetBtn.innerHTML = active
+            ? `&#10006; Daily Set (${size})`
+            : `&#127919; Daily Set (${size})`;
+    }
+}
+
+// Clear the "answered" state for questions that were answered incorrectly
+// (answered but not completed). This lets the user retry them on a new day
+// while keeping correctly-completed questions locked. Bookmarks and completed
+// state are preserved.
+function resetWrongAnswers() {
+    let changed = false;
+    for (const id in progress) {
+        if (id === SETTINGS_KEY) continue;
+        const p = progress[id];
+        if (!p || typeof p !== 'object') continue;
+        // Wrong = an answer was chosen but the question isn't marked completed.
+        // Clear the chosen answer so it's answerable again, but keep `wrongDate`
+        // so the daily set can still prioritize it as a question to retry.
+        if (p.answered !== undefined && !p.completed) {
+            delete p.answered;
+            changed = true;
+        }
+    }
+    if (changed) saveProgress();
 }
 
 function resetProgress() {
@@ -443,7 +534,9 @@ function updateDailySetUI() {
     const size = getDailySetSize();
     if (elements.dailySetSize) elements.dailySetSize.value = String(size);
     if (elements.dailySetBtn) {
-        elements.dailySetBtn.innerHTML = `&#127919; Daily Set (${size})`;
+        elements.dailySetBtn.innerHTML = isDailyActive
+            ? `&#10006; Daily Set (${size})`
+            : `&#127919; Daily Set (${size})`;
     }
 }
 
@@ -652,7 +745,13 @@ function setupEventListeners() {
     elements.difficultyFilter.addEventListener('change', applyFilters);
     elements.statusFilter.addEventListener('change', applyFilters);
     elements.shuffleBtn.addEventListener('click', shuffleQuestions);
-    elements.dailySetBtn.addEventListener('click', () => generateDailySet());
+    elements.dailySetBtn.addEventListener('click', () => {
+        if (isDailyActive) {
+            exitDailySet();
+        } else {
+            generateDailySet();
+        }
+    });
     if (elements.dailySetSize) {
         elements.dailySetSize.addEventListener('change', (e) => {
             const size = parseInt(e.target.value, 10) || DEFAULT_DAILY_SIZE;
