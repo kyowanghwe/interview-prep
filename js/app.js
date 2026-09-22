@@ -37,7 +37,8 @@ const elements = {
     progressText: document.getElementById('progressText'),
     sheetUrl: document.getElementById('sheetUrl'),
     saveConfigBtn: document.getElementById('saveConfigBtn'),
-    useLocalBtn: document.getElementById('useLocalBtn'),
+    uploadCsvBtn: document.getElementById('uploadCsvBtn'),
+    csvFileInput: document.getElementById('csvFileInput'),
     // Auth / sync
     loginBtn: document.getElementById('loginBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
@@ -637,10 +638,47 @@ function saveConfig() {
     loadQuestions();
 }
 
-function useLocalData() {
-    localStorage.removeItem(STORAGE_KEYS.SHEET_URL);
-    elements.sheetUrl.value = '';
-    loadQuestions();
+// Load questions from a CSV file the user picks from their own computer.
+// Uses FileReader so it works even when opened via file:// (no server needed).
+function handleCsvUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    showLoading(true);
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+        try {
+            const parsed = parseCSV(e.target.result);
+            if (parsed.length === 0) {
+                showError('No questions found in that CSV. Check the header row: id, topic, difficulty, question, choice_a, choice_b, choice_c, choice_d, correct, explanation.');
+                showLoading(false);
+                return;
+            }
+            // Switch off any Google Sheet source so this upload is what's shown.
+            localStorage.removeItem(STORAGE_KEYS.SHEET_URL);
+            elements.sheetUrl.value = '';
+
+            allQuestions = parsed;
+            populateTopicFilter();
+            applyFilters();
+            updateStats();
+            showLoading(false);
+        } catch (err) {
+            console.error('Failed to parse uploaded CSV:', err);
+            showError('Could not read that CSV file. Check the format and try again.');
+            showLoading(false);
+        }
+    };
+
+    reader.onerror = () => {
+        showError('Could not read the selected file.');
+        showLoading(false);
+    };
+
+    reader.readAsText(file);
+    // Reset so selecting the same file again still fires "change".
+    event.target.value = '';
 }
 
 // ===== Auth & Sync =====
@@ -781,7 +819,10 @@ function setupEventListeners() {
     }
     elements.resetProgressBtn.addEventListener('click', resetProgress);
     elements.saveConfigBtn.addEventListener('click', saveConfig);
-    elements.useLocalBtn.addEventListener('click', useLocalData);
+    if (elements.uploadCsvBtn && elements.csvFileInput) {
+        elements.uploadCsvBtn.addEventListener('click', () => elements.csvFileInput.click());
+        elements.csvFileInput.addEventListener('change', handleCsvUpload);
+    }
     if (elements.loginBtn) elements.loginBtn.addEventListener('click', handleLogin);
     if (elements.logoutBtn) elements.logoutBtn.addEventListener('click', handleLogout);
     if (elements.leaderboardRefreshBtn) {
