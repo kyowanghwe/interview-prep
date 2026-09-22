@@ -1,7 +1,7 @@
 // ===== Senior Java Interview Prep - Main App =====
 
 import { login, logout, handleRedirect, isLoggedIn, getUser } from './auth.js';
-import { pullProgress, mergeProgress, schedulePush, clearGistCache, fetchLeaderboard } from './sync.js';
+import { pullProgress, schedulePush, clearGistCache, fetchLeaderboard } from './sync.js';
 import { isSyncConfigured } from './config.js';
 
 const STORAGE_KEYS = {
@@ -694,15 +694,23 @@ async function syncPull(justLoggedIn) {
     setSyncStatus('pulling');
     try {
         const remote = await pullProgress();
-        const merged = mergeProgress(progress, remote);
-        progress = merged;
 
-        // Persist the merged result locally.
-        localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+        // Remote is the source of truth on load. If it already has progress, adopt it
+        // as-is and DO NOT push local back up — this prevents a device with stale local
+        // data from clobbering newer progress that was synced from another device.
+        const remoteHasProgress = remote && hasRealProgress(remote);
 
-        // If we just logged in and local had data the remote lacked, push the merge back.
-        if (justLoggedIn) {
-            schedulePush(() => progress, (err) => setSyncStatus(err ? 'error' : 'synced'));
+        if (remoteHasProgress) {
+            progress = remote;
+            localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+        } else {
+            // Remote is empty (new account). Seed it from whatever is local, so a
+            // first-time login doesn't lose work already done offline on this device.
+            const localHasProgress = hasRealProgress(progress);
+            localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+            if (localHasProgress) {
+                schedulePush(() => progress, (err) => setSyncStatus(err ? 'error' : 'synced'));
+            }
         }
 
         updateDailySetUI();
@@ -713,6 +721,13 @@ async function syncPull(justLoggedIn) {
         console.warn('Initial sync pull failed:', e);
         setSyncStatus('error');
     }
+}
+
+// True if the progress object has at least one real question entry
+// (ignores the reserved __settings key).
+function hasRealProgress(p) {
+    if (!p) return false;
+    return Object.keys(p).some((k) => k !== '__settings');
 }
 
 function handleLogin() {
