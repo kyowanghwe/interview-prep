@@ -2,7 +2,7 @@
 
 import { login, logout, handleRedirect, isLoggedIn, getUser } from './auth.js';
 import { pullProgress, schedulePush, clearGistCache, fetchLeaderboard } from './sync.js';
-import { isSyncConfigured } from './config.js';
+import { isSyncConfigured, CONFIG } from './config.js';
 
 const STORAGE_KEYS = {
     SHEET_URL: 'jip_sheet_url',
@@ -101,7 +101,10 @@ function maybeResetWrongAnswersForNewDay() {
 async function loadQuestions() {
     showLoading(true);
 
-    const sheetUrl = localStorage.getItem(STORAGE_KEYS.SHEET_URL);
+    // Prefer a Google Sheet so edits to the sheet show up on the site:
+    // use the user's saved URL if set, otherwise the default from config.
+    // Fall back to the bundled local CSV only if there's no sheet URL.
+    const sheetUrl = localStorage.getItem(STORAGE_KEYS.SHEET_URL) || CONFIG.DEFAULT_SHEET_URL;
 
     try {
         if (sheetUrl) {

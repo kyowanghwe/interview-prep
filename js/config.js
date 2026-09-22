@@ -13,6 +13,13 @@ export const CONFIG = {
 
     // OAuth scope. 'read:user' is all we need to identify the user.
     OAUTH_SCOPE: 'read:user',
+
+    // Default Google Sheet to load questions from (CSV export URL).
+    // The app loads from this first so edits to the sheet show up on the site.
+    // The sheet must be publicly viewable ("Anyone with the link" or Published
+    // to web) for the browser to fetch it; otherwise the app falls back to the
+    // local data/questions.csv.
+    DEFAULT_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1puzWo-7anuJe5c63nY35N8N3JjqF3eZTsN5_TP4XxHs/export?format=csv',
 };
 
 // True once the placeholders above have been replaced with real values.
