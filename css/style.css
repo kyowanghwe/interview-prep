@@ -723,6 +723,15 @@ body {
     transform: translateY(0);
 }
 
+/* Jump-to-bottom shares the same corner; only one shows at a time. */
+.back-to-top--bottom {
+    transform: translateY(-8px);
+}
+
+.back-to-top--bottom.is-visible {
+    transform: translateY(0);
+}
+
 @media (max-width: 640px) {
     .back-to-top {
         right: 1rem;

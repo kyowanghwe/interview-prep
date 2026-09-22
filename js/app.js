@@ -47,6 +47,7 @@ const elements = {
     authName: document.getElementById('authName'),
     syncStatus: document.getElementById('syncStatus'),
     backToTopBtn: document.getElementById('backToTopBtn'),
+    jumpToBottomBtn: document.getElementById('jumpToBottomBtn'),
     leaderboardList: document.getElementById('leaderboardList'),
     leaderboardRefreshBtn: document.getElementById('leaderboardRefreshBtn'),
     leaderboardToggleBtn: document.getElementById('leaderboardToggleBtn'),
@@ -223,6 +224,7 @@ function renderQuestions(questions) {
                 <p class="empty-state__text">No questions match your filters. Try adjusting the filters above.</p>
             </div>
         `;
+        refreshScrollButtons();
         return;
     }
 
@@ -308,6 +310,9 @@ function renderQuestions(questions) {
             </article>
         `;
     }).join('');
+
+    // List height just changed; re-evaluate the floating scroll buttons.
+    refreshScrollButtons();
 }
 
 function formatExplanation(text) {
@@ -460,6 +465,12 @@ function generateDailySet(forceNew = false) {
     renderQuestions(filteredQuestions);
     updateProgressBar();
     setDailyActive(true);
+}
+
+// Recompute floating scroll-button visibility (page height changes when the
+// question list re-renders). Fires the same handler the scroll listener uses.
+function refreshScrollButtons() {
+    window.dispatchEvent(new Event('scroll'));
 }
 
 // Exit daily set mode and restore the full filtered list.
@@ -837,17 +848,37 @@ function setupEventListeners() {
         });
     }
 
-    // Back-to-top: show after scrolling down, smooth-scroll to top on click.
-    if (elements.backToTopBtn) {
-        const toggleBackToTop = () => {
-            const show = window.scrollY > 400;
-            elements.backToTopBtn.classList.toggle('is-visible', show);
+    // Scroll helpers: show "back to top" once scrolled down, and "jump to
+    // bottom" while near the top (handy for long question lists).
+    if (elements.backToTopBtn || elements.jumpToBottomBtn) {
+        const toggleScrollButtons = () => {
+            const scrolledDown = window.scrollY > 400;
+            // There's meaningful content below only if the page is tall enough.
+            const canScrollDown =
+                document.documentElement.scrollHeight - window.innerHeight - window.scrollY > 400;
+
+            if (elements.backToTopBtn) {
+                elements.backToTopBtn.classList.toggle('is-visible', scrolledDown);
+            }
+            if (elements.jumpToBottomBtn) {
+                elements.jumpToBottomBtn.classList.toggle('is-visible', !scrolledDown && canScrollDown);
+            }
         };
-        window.addEventListener('scroll', toggleBackToTop, { passive: true });
-        toggleBackToTop();
-        elements.backToTopBtn.addEventListener('click', () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+
+        window.addEventListener('scroll', toggleScrollButtons, { passive: true });
+        window.addEventListener('resize', toggleScrollButtons, { passive: true });
+        toggleScrollButtons();
+
+        if (elements.backToTopBtn) {
+            elements.backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+        if (elements.jumpToBottomBtn) {
+            elements.jumpToBottomBtn.addEventListener('click', () => {
+                window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            });
+        }
     }
 }
 
