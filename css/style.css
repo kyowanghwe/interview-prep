@@ -894,9 +894,22 @@ body {
     white-space: nowrap;
 }
 
-/* Hide on small screens where fixed panel overlaps content */
+/* On small screens the fixed top-right panel would overlap content, so drop it
+   into the normal flow as a full-width block instead of hiding it. */
 @media (max-width: 1180px) {
     .leaderboard {
-        display: none;
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: 100%;
+        top: auto;
+        right: auto;
+        margin: 0 0 1.5rem 0;
+        box-sizing: border-box;
+    }
+
+    /* Keep it expanded on mobile (the collapse toggle still works if tapped). */
+    .leaderboard.is-collapsed {
+        width: 100% !important;
     }
 }
