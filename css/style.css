@@ -152,6 +152,11 @@ body {
     white-space: nowrap;
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .btn--primary {
     background: var(--color-primary);
     color: white;
@@ -400,6 +405,16 @@ body {
     margin-top: 0.5rem;
 }
 
+.question-card__hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.question-card__submit {
+    margin-top: 0.75rem;
+}
+
 .choice {
     display: flex;
     align-items: flex-start;
@@ -468,6 +483,10 @@ body {
     color: white;
 }
 
+.choice--missed {
+    border-style: dashed;
+}
+
 .choice--disabled {
     cursor: default;
     opacity: 0.7;
@@ -520,6 +539,11 @@ body {
 .question-card__result--wrong {
     background: rgba(239, 68, 68, 0.1);
     color: var(--color-danger);
+}
+
+.question-card__result--partial {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning);
 }
 
 /* ===== Loading ===== */

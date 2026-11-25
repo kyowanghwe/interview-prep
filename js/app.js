@@ -18,6 +18,8 @@ let allQuestions = [];
 let filteredQuestions = [];
 let progress = loadProgress();
 let isDailyActive = false; // tracks whether the daily set view is currently active
+// Unsubmitted multi-answer selections, keyed by question id.
+const pendingSelections = new Map();
 
 // ===== DOM Elements =====
 const elements = {
@@ -71,7 +73,7 @@ async function init() {
 
     updateAuthUI();
     updateDailySetUI();
-    await loadQuestions();
+    await loadQuestions({ deferSync: true });
 
     // If logged in, pull remote progress and merge it in.
     if (isLoggedIn()) {
@@ -98,8 +100,9 @@ function maybeResetWrongAnswersForNewDay() {
 }
 
 // ===== Data Loading =====
-async function loadQuestions() {
+async function loadQuestions({ deferSync = false } = {}) {
     showLoading(true);
+    pendingSelections.clear();
 
     // Prefer a Google Sheet so edits to the sheet show up on the site:
     // use the user's saved URL if set, otherwise the default from config.
@@ -113,23 +116,58 @@ async function loadQuestions() {
             allQuestions = await fetchLocalQuestions();
         }
 
-        populateTopicFilter();
-        applyFilters();
-        updateStats();
+        finalizeQuestionsLoad({ deferSync });
         showLoading(false);
     } catch (error) {
         console.error('Failed to load questions:', error);
         // Fallback to local
         try {
             allQuestions = await fetchLocalQuestions();
-            populateTopicFilter();
-            applyFilters();
-            updateStats();
+            finalizeQuestionsLoad({ deferSync });
         } catch (e) {
             showError('Failed to load questions. Check console for details.');
         }
         showLoading(false);
     }
+}
+
+function finalizeQuestionsLoad({ deferSync = false } = {}) {
+    // Clean up stored answers whose shape no longer matches the question.
+    // During startup we defer the push until after syncPull(), so a device with
+    // stale local data cannot overwrite newer remote progress.
+    migrateLegacyAnswerShapes({ push: !deferSync });
+    populateTopicFilter();
+    applyFilters();
+    updateStats();
+}
+
+function migrateLegacyAnswerShapes({ push = true } = {}) {
+    let changed = false;
+
+    for (const question of allQuestions) {
+        const entry = progress[question.id];
+        if (!entry) continue;
+
+        // A multi-answer question expects an array; a single-answer question
+        // expects a number. Ids are shared across question banks, so an answer
+        // stored for the same id in another bank can have the wrong shape.
+        const hasWrongShape = isMultiAnswer(question)
+            ? typeof entry.answered === 'number'
+            : Array.isArray(entry.answered);
+
+        if (!hasWrongShape) continue;
+
+        // The old single-answer logic stored one index for multi-answer
+        // questions and could mark them completed with the fallback answer.
+        delete entry.answered;
+        delete entry.completed;
+        delete entry.completedDate;
+
+        if (!Object.keys(entry).length) delete progress[question.id];
+        changed = true;
+    }
+
+    if (changed) saveProgress({ push });
 }
 
 async function fetchFromGoogleSheets(url) {
@@ -140,12 +178,60 @@ async function fetchFromGoogleSheets(url) {
     return parseCSV(csvText);
 }
 
-function parseCSV(csv) {
-    const lines = csv.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+// Parse the entire CSV text at once so quoted fields containing newlines,
+// commas, and escaped quotes stay part of the same record.
+function parseCSVRows(text) {
+    const rows = [];
+    let row = [];
+    let field = '';
+    let inQuotes = false;
 
-    // First line is headers: id, topic, difficulty, question, answer
-    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+    text = text.replace(/^\uFEFF/, '');
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (inQuotes) {
+            if (char === '"') {
+                if (text[i + 1] === '"') {
+                    field += '"';
+                    i++;
+                } else {
+                    inQuotes = false;
+                }
+            } else {
+                field += char;
+            }
+        } else if (char === '"' && field === '') {
+            inQuotes = true;
+        } else if (char === ',') {
+            row.push(field);
+            field = '';
+        } else if (char === '\n' || char === '\r') {
+            if (char === '\r' && text[i + 1] === '\n') i++;
+            row.push(field);
+            rows.push(row);
+            row = [];
+            field = '';
+        } else {
+            field += char;
+        }
+    }
+
+    if (field !== '' || row.length > 0) {
+        row.push(field);
+        rows.push(row);
+    }
+
+    return rows.filter(r => r.some(cell => cell.trim() !== ''));
+}
+
+function parseCSV(csv) {
+    const rows = parseCSVRows(csv);
+    if (rows.length < 2) return [];
+
+    // First row is headers: id, topic, difficulty, question, ...
+    const headers = rows[0].map(h => h.toLowerCase().trim());
 
     const idIdx = headers.indexOf('id');
     const topicIdx = headers.indexOf('topic');
@@ -159,25 +245,41 @@ function parseCSV(csv) {
     const explanationIdx = headers.indexOf('explanation');
 
     const questions = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = parseCSVLine(lines[i]);
+    for (let i = 1; i < rows.length; i++) {
+        const values = rows[i];
         if (values.length < 4) continue;
 
-        const correctLetter = (values[correctIdx] || 'A').trim().toUpperCase();
-        const correctIndex = ['A', 'B', 'C', 'D'].indexOf(correctLetter);
+        const questionId = values[idIdx] || String(i);
+        const rawCorrect = (values[correctIdx] || 'A').trim().toUpperCase();
+        const correctLetters = [...new Set(rawCorrect.match(/[A-D]/g) || [])].sort();
+        const correctIndexes = correctLetters
+            .map(letter => ['A', 'B', 'C', 'D'].indexOf(letter))
+            .filter(index => index >= 0);
+
+        if (!correctIndexes.length) {
+            console.warn(`Question ${questionId}: invalid correct value "${rawCorrect}", defaulting to A`);
+            correctIndexes.push(0);
+        }
+
+        const choices = [
+            (values[choiceAIdx] || '').trim(),
+            (values[choiceBIdx] || '').trim(),
+            (values[choiceCIdx] || '').trim(),
+            (values[choiceDIdx] || '').trim(),
+        ];
+
+        if (correctIndexes.some(index => !choices[index])) {
+            console.warn(`Question ${questionId}: correct answer points to an empty choice`);
+        }
 
         questions.push({
-            id: values[idIdx] || String(i),
+            id: questionId,
             topic: (values[topicIdx] || 'General').trim(),
             difficulty: (values[diffIdx] || 'medium').trim().toLowerCase(),
             question: (values[questionIdx] || '').trim(),
-            choices: [
-                (values[choiceAIdx] || '').trim(),
-                (values[choiceBIdx] || '').trim(),
-                (values[choiceCIdx] || '').trim(),
-                (values[choiceDIdx] || '').trim(),
-            ],
-            correctIndex: correctIndex >= 0 ? correctIndex : 0,
+            choices,
+            correctIndexes,
+            correctIndex: correctIndexes[0],
             explanation: (values[explanationIdx] || '').trim(),
         });
     }
@@ -185,30 +287,15 @@ function parseCSV(csv) {
     return questions.filter(q => q.question);
 }
 
-function parseCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-
-        if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-                current += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-            }
-        } else if (char === ',' && !inQuotes) {
-            result.push(current);
-            current = '';
-        } else {
-            current += char;
-        }
+function getCorrectIndexes(question) {
+    if (Array.isArray(question.correctIndexes) && question.correctIndexes.length) {
+        return question.correctIndexes;
     }
-    result.push(current);
-    return result;
+    return [question.correctIndex ?? 0];
+}
+
+function isMultiAnswer(question) {
+    return getCorrectIndexes(question).length > 1;
 }
 
 async function fetchLocalQuestions() {
@@ -235,7 +322,7 @@ function renderQuestions(questions) {
         const status = progress[q.id] || {};
         const isCompleted = status.completed;
         const isBookmarked = status.bookmarked;
-        const answered = status.answered; // index of chosen answer
+        const answered = status.answered; // single index, or an array for multi-answer
         // A "retry" question was answered wrong on a previous day, unlocked for
         // another attempt (has wrongDate, not completed, no current answer).
         const isRetry = status.wrongDate && !isCompleted && answered === undefined;
@@ -248,33 +335,94 @@ function renderQuestions(questions) {
         ].filter(Boolean).join(' ');
 
         const letters = ['A', 'B', 'C', 'D'];
-        const choices = q.choices || [];
-        const correctIdx = q.correctIndex ?? 0;
+        const choices = (q.choices || [])
+            .map((text, index) => ({ text, index }))
+            .filter(c => c.text.trim() !== '');
+
+        const correctIndexes = getCorrectIndexes(q);
+        const isMulti = correctIndexes.length > 1;
+        const correctIdx = correctIndexes[0] ?? 0;
         const hasAnswered = answered !== undefined;
 
-        const choicesHtml = choices.map((choice, i) => {
+        const answeredIndexes = Array.isArray(answered)
+            ? answered
+            : (typeof answered === 'number' ? [answered] : []);
+        const pending = isMulti && !hasAnswered
+            ? [...(pendingSelections.get(q.id) || [])]
+            : [];
+        const selectedIndexes = isMulti
+            ? [...new Set(hasAnswered ? answeredIndexes : pending)].sort((a, b) => a - b)
+            : answeredIndexes;
+
+        const isSelected = index => selectedIndexes.includes(index);
+        const isCorrectChoice = index => correctIndexes.includes(index);
+        const isFullyCorrect = isMulti && hasAnswered &&
+            selectedIndexes.length === correctIndexes.length &&
+            selectedIndexes.every((index, i) => index === correctIndexes[i]);
+        const isPartial = isMulti && hasAnswered && !isFullyCorrect &&
+            selectedIndexes.length > 0 &&
+            selectedIndexes.every(index => isCorrectChoice(index));
+
+        const choicesHtml = choices.map(({ text, index }) => {
             let stateClass = '';
-            if (hasAnswered) {
-                if (i === correctIdx) stateClass = 'choice--correct';
-                else if (i === answered && i !== correctIdx) stateClass = 'choice--wrong';
+
+            if (isMulti) {
+                if (hasAnswered) {
+                    if (isCorrectChoice(index)) {
+                        stateClass = 'choice--correct';
+                        if (!isSelected(index)) stateClass += ' choice--missed';
+                    } else if (isSelected(index)) {
+                        stateClass = 'choice--wrong';
+                    }
+                    stateClass += ' choice--disabled';
+                } else if (isSelected(index)) {
+                    stateClass = 'choice--selected';
+                }
+            } else if (hasAnswered) {
+                if (index === correctIdx) stateClass = 'choice--correct';
+                else if (index === answered) stateClass = 'choice--wrong';
                 stateClass += ' choice--disabled';
             }
 
             return `
                 <div class="choice ${stateClass}" 
-                     onclick="selectChoice('${q.id}', ${i})"
-                     data-index="${i}">
-                    <span class="choice__letter">${letters[i]}</span>
-                    <span class="choice__text">${escapeHtml(choice)}</span>
+                     onclick="selectChoice('${q.id}', ${index})"
+                     data-index="${index}">
+                    <span class="choice__letter">${letters[index]}</span>
+                    <span class="choice__text">${escapeHtml(text)}</span>
                 </div>
             `;
         }).join('');
 
-        const resultHtml = hasAnswered
-            ? (answered === correctIdx
-                ? `<span class="question-card__result question-card__result--correct">&#10003; Correct</span>`
-                : `<span class="question-card__result question-card__result--wrong">&#10007; Wrong — Answer: ${letters[correctIdx]}</span>`)
+        const multiHintHtml = isMulti && !hasAnswered
+            ? '<p class="question-card__hint">Select all that apply.</p>'
             : '';
+
+        const submitHtml = isMulti && !hasAnswered
+            ? `<button class="btn btn--primary btn--small question-card__submit"
+                       onclick="submitMultiAnswer('${q.id}')"
+                       ${selectedIndexes.length ? '' : 'disabled'}>
+                   Check answer
+               </button>`
+            : '';
+
+        let resultHtml = '';
+        if (hasAnswered) {
+            if (isMulti) {
+                const correctAnswerText = correctIndexes.map(index => letters[index]).join(', ');
+                if (isFullyCorrect) {
+                    resultHtml = '<span class="question-card__result question-card__result--correct">&#10003; Correct</span>';
+                } else if (isPartial) {
+                    resultHtml = `<span class="question-card__result question-card__result--partial">&#9680; Partially correct &mdash; Answers: ${correctAnswerText}</span>`;
+                } else {
+                    resultHtml = `<span class="question-card__result question-card__result--wrong">&#10007; Wrong &mdash; Answers: ${correctAnswerText}</span>`;
+                }
+            } else {
+                resultHtml = answered === correctIdx
+                    ? '<span class="question-card__result question-card__result--correct">&#10003; Correct</span>'
+                    : `<span class="question-card__result question-card__result--wrong">&#10007; Wrong &mdash; Answer: ${letters[correctIdx]}</span>`;
+            }
+        }
 
         const explanationHtml = q.explanation
             ? `<div class="question-card__explanation ${hasAnswered ? 'question-card__explanation--visible' : ''}">${formatExplanation(q.explanation)}</div>`
@@ -305,9 +453,11 @@ function renderQuestions(questions) {
                     <span class="question-card__number">#${idx + 1}</span>
                     ${escapeHtml(q.question)}
                 </p>
+                ${multiHintHtml}
                 <div class="question-card__choices">
                     ${choicesHtml}
                 </div>
+                ${submitHtml}
                 ${resultHtml}
                 ${explanationHtml}
             </article>
@@ -366,14 +516,37 @@ function applyFilters() {
 
 // ===== Actions =====
 window.selectChoice = function (id, chosenIndex) {
+    const question = allQuestions.find(q => q.id === id);
+    if (!question) return;
+
+    const correctIndexes = getCorrectIndexes(question);
+
+    if (correctIndexes.length > 1) {
+        // Multi-answer: toggle the selection until the user submits.
+        if (progress[id]?.answered !== undefined) return;
+
+        const selected = pendingSelections.get(id) || new Set();
+        if (selected.has(chosenIndex)) {
+            selected.delete(chosenIndex);
+        } else {
+            selected.add(chosenIndex);
+        }
+
+        if (selected.size) {
+            pendingSelections.set(id, selected);
+        } else {
+            pendingSelections.delete(id);
+        }
+
+        renderQuestions(filteredQuestions);
+        return;
+    }
+
     if (!progress[id]) progress[id] = {};
     // Don't allow re-answering
     if (progress[id].answered !== undefined) return;
 
-    const question = allQuestions.find(q => q.id === id);
-    if (!question) return;
-
-    const correctIdx = question.correctIndex ?? 0;
+    const correctIdx = correctIndexes[0] ?? 0;
     const today = new Date().toISOString().split('T')[0];
     progress[id].answered = chosenIndex;
 
@@ -389,6 +562,41 @@ window.selectChoice = function (id, chosenIndex) {
 
     saveProgress();
     // Re-render just this card for instant feedback
+    renderQuestions(filteredQuestions);
+    updateStats();
+};
+
+window.submitMultiAnswer = function (id) {
+    const question = allQuestions.find(q => q.id === id);
+    if (!question) return;
+
+    const correctIndexes = getCorrectIndexes(question);
+    if (correctIndexes.length <= 1) return;
+    if (progress[id]?.answered !== undefined) return;
+
+    const selected = [...(pendingSelections.get(id) || [])].sort((a, b) => a - b);
+    if (!selected.length) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const isCorrect =
+        selected.length === correctIndexes.length &&
+        selected.every((index, i) => index === correctIndexes[i]);
+
+    if (!progress[id]) progress[id] = {};
+    progress[id].answered = selected;
+
+    if (isCorrect) {
+        progress[id].completed = true;
+        progress[id].completedDate = today;
+        delete progress[id].wrongDate;
+    } else {
+        progress[id].completed = false;
+        delete progress[id].completedDate;
+        progress[id].wrongDate = today;
+    }
+
+    pendingSelections.delete(id);
+    saveProgress();
     renderQuestions(filteredQuestions);
     updateStats();
 };
@@ -525,6 +733,7 @@ function resetProgress() {
     if (Object.keys(keptSettings).length) progress[SETTINGS_KEY] = keptSettings;
     saveProgress();
     localStorage.removeItem(STORAGE_KEYS.DAILY_SET);
+    pendingSelections.clear();
     applyFilters();
     updateStats();
 }
@@ -568,12 +777,12 @@ function loadProgress() {
     }
 }
 
-function saveProgress() {
+function saveProgress({ push = true } = {}) {
     // Instant local write (offline cache + fallback).
     localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
 
     // If logged in, push to the gist (debounced).
-    if (isLoggedIn()) {
+    if (push && isLoggedIn()) {
         setSyncStatus('saving');
         schedulePush(
             () => progress,
@@ -658,6 +867,7 @@ function handleCsvUpload(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
 
+    pendingSelections.clear();
     showLoading(true);
     const reader = new FileReader();
 
@@ -674,9 +884,7 @@ function handleCsvUpload(event) {
             elements.sheetUrl.value = '';
 
             allQuestions = parsed;
-            populateTopicFilter();
-            applyFilters();
-            updateStats();
+            finalizeQuestionsLoad();
             showLoading(false);
         } catch (err) {
             console.error('Failed to parse uploaded CSV:', err);
@@ -765,6 +973,8 @@ async function syncPull(justLoggedIn) {
             }
         }
 
+        pendingSelections.clear();
+        migrateLegacyAnswerShapes();
         updateDailySetUI();
         applyFilters();
         updateStats();

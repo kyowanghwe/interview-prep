@@ -197,7 +197,7 @@ Load questions dynamically from a Google Sheet — edit the spreadsheet and the 
 - **id**: unique identifier (number or string)
 - **topic**: category name (e.g. `JVM Internals`, `Spring Framework`)
 - **difficulty**: `medium`, `hard`, or `expert`
-- **correct**: the correct letter — `A`, `B`, `C`, or `D`
+- **correct**: the correct letter — `A`, `B`, `C`, or `D`. For multiple correct answers, use a comma-separated list such as `A,C`; the question then shows a **Check answer** button and is graded on the full set.
 - **explanation**: why the answer is correct
 
 ### Setup
@@ -237,6 +237,7 @@ Example row:
 - The button highlights in indigo when active; click again to return to the full list
 - Questions you answer **correctly** are marked complete and excluded from future daily sets
 - Questions you answer **wrong** are unlocked the next day, flagged with a **↻ Retry** badge, and placed **first** in the next daily set so you see them again
+- Multi-answer questions use **Check answer**: select every correct choice, then submit. A partial selection shows an amber *Partially correct* result and is retried like a wrong answer.
 - The progress bar updates to reflect the daily set size while active
 
 ---
